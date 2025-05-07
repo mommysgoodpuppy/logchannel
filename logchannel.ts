@@ -29,7 +29,46 @@
  * // if "inactive_channel" is not in the activeChannels list.
  * ```
  */
-export const LogChannel = (() => {
+
+/**
+ * Defines the interface for the LogChannel module.
+ */
+export interface ILogChannel {
+    /**
+     * Sets the active logging channels.
+     * Only messages sent to these channels will be logged.
+     * @param channels - A single channel name or an array of channel names to activate.
+     *                   Empty strings or arrays containing only empty strings will result in no active channels.
+     */
+    setChannel: (channels: string | string[]) => void;
+    /**
+     * Logs messages to `console.log` if the specified channel is active.
+     * @param channel - The channel name.
+     * @param messages - The messages to log.
+     */
+    log: (channel: string, ...messages: unknown[]) => void;
+    /**
+     * Logs error messages to `console.error` if the specified channel is active.
+     * The log output will be prefixed with `[CHANNEL:ERROR]`.
+     * @param channel - The channel name.
+     * @param messages - The error messages to log.
+     */
+    error: (channel: string, ...messages: unknown[]) => void;
+    /**
+     * Logs debug messages to `console.debug` if the specified channel is active.
+     * The log output will be prefixed with `[CHANNEL:DEBUG]`.
+     * @param channel - The channel name.
+     * @param messages - The debug messages to log.
+     */
+    debug: (channel: string, ...messages: unknown[]) => void;
+    /**
+     * Gets the currently active channels.
+     * @returns A copy of the active channels array.
+     */
+    getActiveChannels: () => string[];
+}
+
+export const LogChannel: ILogChannel = (() => {
     let activeChannels: string[];
 
     // Initialize activeChannels from environment variable or set a default
@@ -57,12 +96,6 @@ export const LogChannel = (() => {
 
     initChannels(); // Initialize channels when the module is loaded
 
-    /**
-     * Sets the active logging channels.
-     * Only messages sent to these channels will be logged.
-     * @param {(string|string[])} channels - A single channel name or an array of channel names to activate.
-     *                                     Empty strings or arrays containing only empty strings will result in no active channels.
-     */
     const setChannel = (channels: string | string[]) => {
         if (Array.isArray(channels)) {
             activeChannels = channels.map(ch => ch.trim()).filter(ch => ch !== "");
@@ -72,20 +105,12 @@ export const LogChannel = (() => {
         }
     };
 
-    /**
-     * Internal helper to process log, error, and debug messages.
-     * @param outputFn - The console function to use (console.log, console.error, or console.debug).
-     * @param channel - The channel name for this log message.
-     * @param messages - The messages to log.
-     * @param logType - Optional. The type of log (e.g., "ERROR", "DEBUG") to include in the prefix.
-     */
     const _processLogEvent = (
         outputFn: (...data: any[]) => void,
         channel: string,
         messages: unknown[],
         logType?: "ERROR" | "DEBUG"
     ) => {
-        // Log only if the channel is active and there are actual messages to log.
         if (messages.length > 0 && activeChannels.includes(channel)) {
             const prefix = logType
                 ? `[${channel.toUpperCase()}:${logType}]`
@@ -94,47 +119,14 @@ export const LogChannel = (() => {
         }
     };
 
-    /**
-     * Logs messages to `console.log` if the specified channel is active.
-     *
-     * @param {string} channel - The channel name.
-     * @param {...unknown[]} messages - The messages to log.
-     *
-     * @example
-     * LogChannel.setChannel("api");
-     * LogChannel.log("api", "User logged in", { userId: 123 }); // Logs "[API] User logged in { userId: 123 }"
-     * LogChannel.log("default", "This won't print unless 'default' is also active.");
-     */
     const log = (channel: string, ...messages: unknown[]) => {
-        _processLogEvent(console.log, channel, messages); // No logType for standard log
+        _processLogEvent(console.log, channel, messages);
     };
 
-    /**
-     * Logs error messages to `console.error` if the specified channel is active.
-     * The log output will be prefixed with `[CHANNEL:ERROR]`.
-     *
-     * @param {string} channel - The channel name.
-     * @param {...unknown[]} messages - The error messages to log.
-     *
-     * @example
-     * LogChannel.setChannel("critical");
-     * LogChannel.error("critical", "Database connection failed!"); // Logs "[CRITICAL:ERROR] Database connection failed!" via console.error
-     */
     const error = (channel: string, ...messages: unknown[]) => {
         _processLogEvent(console.error, channel, messages, "ERROR");
     };
 
-    /**
-     * Logs debug messages to `console.debug` if the specified channel is active.
-     * The log output will be prefixed with `[CHANNEL:DEBUG]`.
-     *
-     * @param {string} channel - The channel name.
-     * @param {...unknown[]} messages - The debug messages to log.
-     *
-     * @example
-     * LogChannel.setChannel("network_trace");
-     * LogChannel.debug("network_trace", "Packet received:", { size: 1024 }); // Logs "[NETWORK_TRACE:DEBUG] Packet received: { size: 1024 }" via console.debug
-     */
     const debug = (channel: string, ...messages: unknown[]) => {
         _processLogEvent(console.debug, channel, messages, "DEBUG");
     };
@@ -144,10 +136,6 @@ export const LogChannel = (() => {
         log,
         error,
         debug,
-        /**
-         * Gets the currently active channels.
-         * @returns {string[]} A copy of the active channels array.
-         */
-        getActiveChannels: () => [...activeChannels] // Return a copy to prevent external modification
+        getActiveChannels: () => [...activeChannels]
     };
 })();
